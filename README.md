@@ -1,0 +1,237 @@
+# hakyll-diagrams
+
+Compiles any [diagrams](https://diagrams.github.io/) code found within markdown source files
+and inserts the resulting figures into the generated HTML output. The figures can be embedded
+as inline SVG code or referenced via external image files using `<img>` tags.
+
+For example, when a block like this is found in a markdown file:
+
+```` Haskell
+``` diagram { svg:width=300 }
+let
+  target = mconcat
+    [ circle 1 # lw 0 # fc red
+    , circle 2 # lw 0 # fc white
+    , circle 3 # lw 0 # fc red
+    ]
+
+  background = roundedRect 8 8 0.1
+    # lw 0
+    # fc (sRGB24read "#808080")
+    # opacity 0.15
+
+in target <> background
+```
+````
+
+That code will be compiled, and replaced by the rendered SVG figure:
+
+![](./docs-data/target.svg)
+
+If we add a few attributes to the rendered SVG figure:
+
+```` Haskell
+``` diagram {
+  figcaption="An interactive figure. It reacts to mouse hover and each part is a link."
+  svg:width=400
+}
+let
+  hydrogen =
+    mconcat
+      [ proton
+      , electron # moveTo p0
+      , orbit
+      ]
+    where
+      orbit =
+        circle 2
+          # svgAttr "pointer-events" "stroke"
+          # href "https://en.wikipedia.org/wiki/Atomic_orbital"
+          # svgClass "svg_orbit"
+      electron =
+        circle 0.1
+          # fc blue
+          # lw 0
+          # href "https://en.wikipedia.org/wiki/Electron"
+          # svgClass "svg_electron"
+      proton =
+        circle 0.3
+          # fc red
+          # lw 0
+          # href "https://en.wikipedia.org/wiki/Proton"
+          # svgClass "svg_proton"
+      p0 = fromJust $ maxTraceP origin (angleV $ 3/8 @@ turn) orbit
+
+  background =
+    roundedRect 5 5 0.1
+      # lw 0
+      # fc (sRGB24read "#808080")
+      # opacity 0.15
+
+in hydrogen <> background
+```
+````
+
+We will generate this figure:
+
+![](./docs-data/hydrogen.svg)
+
+And with the help of some additional CSS or JavaScript code, we can make it an interactive
+figure. That will not be possible to be shown here, because GitHub has restrictions on
+adding inline SVG and JavaScript code to the Markdown files, however that same figure with
+interactive features is available
+[here](http://renatogarcia.blog.br/posts/hakyll-diagram-example.html).
+
+## Usage
+
+### Input format
+
+In a source file, any Haskell code within a *code block* having `diagram` as one of its
+classes will be rendered to a diagram figure. In a markdown file, it means any code block
+like this:
+
+````{.markdown}
+``` diagram {
+        <options>
+    }
+<code>
+```
+````
+
+Where `<options>` is a list of library and HTML tag attributes, fully described in the
+[Options](#options) section, and `<code>` must consist of a single Haskell expression
+whose resulting value has type [`Diagram SVG`](https://hackage.haskell.org/package/diagrams-core-1.5.1.1/docs/Diagrams-Core.html#t:Diagram).
+
+#### Code
+
+The code block must contain a single Haskell expression of type
+[`Diagram SVG`](https://hackage.haskell.org/package/diagrams-core/docs/Diagrams-Core.html#t:Diagram).
+
+The interpreter environment is configurable via the
+[`Options`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#t:Options)
+record, which serves as an argument to the
+[`drawDiagramsWith`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith)
+function. All exports from modules listed in
+[`globalModules`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:globalModules)
+and
+[`localModules`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:localModules)
+will be available in the context.
+
+#### Options
+
+The options configure what the diagram rendering will produce as results, and specify any
+additional attributes for the resulting HTML and SVG elements.
+
+A valid options list must be in the format:
+
+```
+options    := {option}
+option     := id | class | figcaption | attribute
+id         := "#" name
+class      := "." name
+figcaption := "figcaption=" value
+attritube  := tag ":" name "=" value
+tag        := "figure" | "img" | "svg"
+name       := <any valid HTML attribute name>
+value      := <any valid HTML attribute value>
+```
+
+An input like this:
+
+```` Text
+``` diagram { img:src="external_figure.svg" figcaption="foo"
+      .my_class_a .my_class_b  #my_id
+      img:alt="a circle" figure:myattr=foo img:width=10
+      svg:class="my_svg_class" svg:width=50
+    }
+circle 10
+```
+````
+
+Will generate an external SVG file named *external_figure.svg*, written under the Hakyll's
+configured
+[`destinationDirectory`](https://hackage.haskell.org/package/hakyll/docs/Hakyll-Core-Configuration.html#v:destinationDirectory).
+The `<svg>` tag will have the following attributes:
+
+``` HTML
+<svg width="50.0000" class="my_svg_class" ... >
+```
+
+Besides generating an external file, that input will be replaced in the resulting HTML
+file by a code like:
+
+``` HTML
+<figure id="my_id" class="my_class_a my_class_b" data-myattr="foo">
+  <img src="external_figure.svg" alt="a circle" width="10" />
+  <figcaption>foo</figcaption>
+</figure>
+```
+
+Regardless of any options, a `<svg>` element will always be generated. If we have set an
+`img:src="path"` attribute, the rendered SVG will be written to an external file at
+*path*, and an `<img>` element will link to it. If we don't have an `img:src="path"`
+attribute, the rendered SVG will be inlined in the HTML code.
+
+If we have set a `figcaption="caption"` attribute, the `<svg>` or `<img>` element will be
+nested in a `<figure>` element. Otherwise they will be inserted without a parent.
+
+The attributes must be in the format: `tag:name=value`, and *tag* must be one of:
+`figure`, `img`, and `svg`. This means that the pair `name=value` will be assigned to the
+*tag* element. If that element would not be generated, such as when we don't have an
+`<img>` tag because of an inlined SVG, or if the tag has any other value than those valid
+three, it will be ignored without an error.
+
+The `#id` and `.class` values will be assigned to the outermost element, whether it is
+`<figure>`, `<img>`, or `<svg>`.
+
+
+### Haskell API
+
+All the API documentation is available in the Haddock generated [project
+page](http://renatogarcia.blog.br/hakyll-diagrams).
+
+The main functions are
+[drawDiagrams](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagrams)
+and
+[drawDiagramsWith](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith).
+Both functions accept a
+[Pandoc](https://hackage.haskell.org/package/pandoc-types/docs/Text-Pandoc-Definition.html#t:Pandoc)
+data structure and transform it by replacing
+[CodeBlock's](https://hackage.haskell.org/package/pandoc-types/docs/Text-Pandoc-Definition.html#v:CodeBlock)
+having a `diagram` class with their rendered diagram figures, as explained in the
+[Input format](#input-format) section.
+
+The simplest way to integrate these functions into a [Hakyll's
+rule](https://jaspervdj.be/hakyll/tutorials/03-rules-routes-compilers.html#basic-rules) is
+with code like this:
+
+``` Haskell
+match "posts/*.md" $ do
+    route $ setExtension "html"
+    compile $
+        pandocCompilerWithTransformM
+            defaultHakyllReaderOptions
+            defaultHakyllWriterOptions
+            drawDiagrams
+```
+
+
+## Similar projects
+
+There are two *diagrams* projects,
+[diagrams-pandoc](https://github.com/diagrams/diagrams-pandoc) and
+[diagrams-builder](https://github.com/diagrams/diagrams-builder), that implement
+a portion of the functionality of this *hakyll-diagrams* library. They are not used
+as dependencies because they would not allow some useful features. For example, with
+*diagrams-builder* it is not possible to import a local module qualified, and it has
+some [potential issues](https://hackage.haskell.org/package/diagrams-builder/docs/Diagrams-Builder-Modules.html#v:combineModules)
+when combining them. With *diagrams-pandoc* we cannot add arbitrary attributes to a
+specific HTML element, or generate an inlined SVG instead of an externally linked file.
+
+There is also a homonymous [hakyll-diagrams](https://github.com/cdupont/hakyll-diagrams)
+library that integrates the two diagrams libraries with hakyll, running them inside
+the
+[`Compiler`](https://hackage.haskell.org/package/hakyll/docs/Hakyll-Core-Compiler.html#t:Compiler)
+monad. Since it uses those two diagrams libraries, it has the same limitations
+discussed above. Because of this, I have decided to create a new hakyll-diagrams library
+with all the desired features.

@@ -1,0 +1,3 @@
+``` diagram { }
+circle 10
+```
