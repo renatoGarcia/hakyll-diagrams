@@ -1,0 +1,20 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>hakyll-diagrams</title><link href="linuwial.css" rel="stylesheet" type="text/css" title="Linuwial" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { processClass: "mathjax", ignoreClass: ".*" } });</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><span class="caption">hakyll-diagrams</span><ul class="links" id="page-menu"><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul></div><div id="content"><div id="description"><h1>hakyll-diagrams</h1><div class="doc"><p>Compiles any Haskell <a href="https://diagrams.github.io/">diagrams</a> code embedded in
+input source files (Markdown, reStructuredText, etc.), replacing them with the rendered
+diagrams figures in the generated HTML output. The diagrams figures can be inlined as
+SVG code or referenced as external <code>.svg</code> image files using <code>&lt;img&gt;</code> tags.</p><p>For example, when processing a Markdown input source file, a code block like this:</p><pre>``` diagram { svg:width=300 }
+let
+  target = mconcat
+    [ circle 1 # lw 0 # fc red
+    , circle 2 # lw 0 # fc white
+    , circle 3 # lw 0 # fc red
+    ]
+
+  background = roundedRect 8 8 0.1
+    # lw 0
+    # fc (sRGB24read &quot;#808080&quot;)
+    # opacity 0.15
+
+in target &lt;&gt; background
+```
+</pre><p>will be replaced in the resulting HTML page by this figure:</p><p><img src="docs-data/target.svg" /></p><p>A thoughtful documentation with usage examples and results can be found at the <a href="https://github.com/renatoGarcia/hakyll-diagrams">project
+repository</a>.</p></div></div><div id="module-list"><p class="caption">Modules</p><div id="module-list"><p class="caption">hakyll-diagrams-0.1.0.0</p><ul><li><span class="module details-toggle-control details-toggle" data-details-id="n.1">Hakyll</span><details id="n.1" open="open"><summary class="hide-when-js-enabled">Submodules</summary><ul><li><span class="module details-toggle-control details-toggle" data-details-id="n.1.1">Web</span><details id="n.1.1" open="open"><summary class="hide-when-js-enabled">Submodules</summary><ul><li><span class="module details-toggle-control details-toggle" data-details-id="n.1.1.1">Pandoc</span><details id="n.1.1.1" open="open"><summary class="hide-when-js-enabled">Submodules</summary><ul><li><span class="module"><span class="noexpander">&nbsp;</span><a href="Hakyll-Web-Pandoc-Diagrams.html">Hakyll.Web.Pandoc.Diagrams</a></span></li></ul></details></li></ul></details></li></ul></details></li></ul></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.30.0</p></div></body></html>
