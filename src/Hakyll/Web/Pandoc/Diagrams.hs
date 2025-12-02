@@ -11,6 +11,7 @@ module Hakyll.Web.Pandoc.Diagrams (
   defaultOptions,
 ) where
 
+import Control.Exception (throw)
 import qualified Crypto.Hash.SHA1 as SHA1
 import qualified Data.ByteString.Base16 as B16
 import Data.Default (Default, def)
@@ -34,13 +35,13 @@ import Text.Read (readMaybe)
 
 -- | Configure the interpreter environment used when rendering the diagrams.
 data Options = Options
-  { globalModules :: [(Hint.ModuleName, Maybe String)]
+  { globalModules :: [(String, Maybe String)]
   -- ^ Global modules to import ("module name", "namespace qualifier")
-  , localModules :: [(Hint.ModuleName, Maybe String)]
+  , localModules :: [(String, Maybe String)]
   -- ^ Local modules to import ("module name", "namespace qualifier")
   , searchPaths :: [FilePath]
   -- ^ The paths where to search for local modules
-  , languageExtensions :: [Hint.Extension]
+  , languageExtensions :: [String]
   -- ^ Language extensions in use by the interpreter
   }
   deriving (Show)
@@ -71,11 +72,15 @@ setUpInterpreter :: Options -> Text -> Hint.Interpreter (QDiagram SVG.SVG V2 Dou
 setUpInterpreter opts code = do
   Hint.set
     [ Hint.searchPath := searchPaths opts
-    , Hint.languageExtensions := languageExtensions opts
+    , Hint.languageExtensions := (parseExtension <$> languageExtensions opts)
     ]
   Hint.loadModules $ fst <$> localModules opts
   Hint.setImportsQ $ globalModules opts ++ localModules opts
   Hint.interpret (T.unpack code) (Hint.as :: QDiagram SVG.SVG V2 Double Any)
+  where
+    parseExtension :: String -> Hint.Extension
+    parseExtension t =
+      fromMaybe (throw $ userError ("Invalid language extension: " ++ t)) (readMaybe t)
 
 
 buildDiagram :: Options -> Text -> IO (QDiagram SVG.SVG V2 Double Any)
