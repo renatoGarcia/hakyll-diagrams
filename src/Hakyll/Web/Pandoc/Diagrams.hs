@@ -9,12 +9,15 @@ module Hakyll.Web.Pandoc.Diagrams (
   drawDiagramsWith,
   Options (..),
   defaultOptions,
+  readOptionsFromMetadata,
+  readOptionsFromMetadataWith,
 ) where
 
 import Control.Exception (throw)
 import qualified Crypto.Hash.SHA1 as SHA1
 import qualified Data.ByteString.Base16 as B16
 import Data.Default (Default, def)
+import Data.List (intercalate)
 import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text, unpack)
 import qualified Data.Text as T (drop, isPrefixOf, length, null, pack, take, unpack, unwords)
@@ -23,9 +26,10 @@ import qualified Diagrams.Backend.SVG as SVG
 import Diagrams.Core (renderDia)
 import Diagrams.Prelude (Any, QDiagram, SizeSpec, V2, mkSizeSpec2D)
 import Graphics.Svg.Core (makeAttribute)
-import Hakyll (Compiler, destinationDirectory, makeDirectories)
-import Hakyll.Core.Compiler (unsafeCompiler)
+import Hakyll (Compiler, destinationDirectory, makeDirectories, splitAll, trim)
+import Hakyll.Core.Compiler (getUnderlying, unsafeCompiler)
 import Hakyll.Core.Compiler.Internal (CompilerRead (..), compilerAsk)
+import Hakyll.Core.Metadata (getMetadataField)
 import Language.Haskell.Interpreter (OptionVal ((:=)))
 import qualified Language.Haskell.Interpreter as Hint
 import Text.Pandoc.Definition (Block (..), Caption (Caption), Inline (..), Pandoc)
@@ -44,7 +48,7 @@ data Options = Options
   , languageExtensions :: [String]
   -- ^ Language extensions in use by the interpreter
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 instance Default Options where
@@ -66,6 +70,80 @@ defaultOptions =
     , searchPaths = []
     , languageExtensions = []
     }
+
+
+splitAtComma :: String -> [String]
+splitAtComma = fmap trim . splitAll ","
+
+
+readModule :: String -> (String, Maybe String)
+readModule x =
+  case (fmap trim . splitAll " as ") x of
+    [a] -> (a, Nothing)
+    [a, b] -> (a, Just b)
+    a -> throw $ userError ("Invalid syntax of module metadata: " ++ intercalate " as " a)
+
+
+expandEllipsis
+  :: [a]
+  -- ^ The original value that will replace any ellipsis occurrence
+  -> (String -> a)
+  -- ^ The function that will read the element from a String
+  -> [String]
+  -- ^ The list of comma-separated elements from a metadata field
+  -> [a]
+  -- ^ The resulting element list with all ellipses replaced
+expandEllipsis original transf val = val >>= \x -> if x == "..." then original else [transf x]
+
+
+{- | Read the 'Options' values from
+[metadata block](https://jaspervdj.be/hakyll/tutorials/02-basics.html#pages-and-metadata).
+
+@
+---
+dg.localModules: Utils, Commons as Cm
+dg.searchPaths: lib, ..., posts
+dg.languageExtensions: ""
+---
+@
+
+Each field must be prefixed with a @dg.@ string and must be formatted as a list where each
+element is separated by a comma (@,@).
+
+Any occurrence of an ellipsis (@...@) will be replaced by the current value of that field
+as in the 'Options' first argument. So to append one element at the end of a list, we can
+do: "@..., element@".
+
+When setting either 'globalModules' or 'localModules', a value like "@Utils@" will
+translate to @(\"Utils\", Nothing)@, an unqualified import. A value like "@Commons as Cm@"
+will translate to @(\"Commons\", Just \"Cm\")@, a qualified import.
+
+Any field not present will retain the same value as in the base 'Options'. An empty string
+@""@ will set the field to an empty list.
+-}
+readOptionsFromMetadataWith
+  :: Options
+  -- ^ The base 'Options' which will be modified by the metadata values
+  -> Compiler Options
+  -- ^ The resulting modified 'Options'
+readOptionsFromMetadataWith opts = do
+  underlyingId <- getUnderlying
+  gm <- getMetadataField underlyingId "dg.globalModules"
+  lm <- getMetadataField underlyingId "dg.localModules"
+  sp <- getMetadataField underlyingId "dg.searchPaths"
+  le <- getMetadataField underlyingId "dg.languageExtensions"
+  pure $
+    opts
+      { globalModules = maybe (globalModules opts) (expandEllipsis (globalModules opts) readModule <$> splitAtComma) gm
+      , localModules = maybe (localModules opts) (expandEllipsis (localModules opts) readModule <$> splitAtComma) lm
+      , searchPaths = maybe (searchPaths opts) (expandEllipsis (searchPaths opts) id <$> splitAtComma) sp
+      , languageExtensions = maybe (languageExtensions opts) (expandEllipsis (languageExtensions opts) id <$> splitAtComma) le
+      }
+
+
+-- | Call 'readOptionsFromMetadataWith' with 'defaultOptions' as the argument
+readOptionsFromMetadata :: Compiler Options
+readOptionsFromMetadata = readOptionsFromMetadataWith defaultOptions
 
 
 setUpInterpreter :: Options -> Text -> Hint.Interpreter (QDiagram SVG.SVG V2 Double Any)
@@ -118,19 +196,19 @@ genInlineSvg opts code imageSize elementId classes attributes =
         False
 
 
-genImageFile ::
-  -- | Interpreter configuration
-  Options ->
-  -- | Destination directory
-  FilePath ->
-  -- | Output path relative to destination
-  FilePath ->
-  -- | Haskell code to interpret
-  Text ->
-  -- | Output image size
-  SizeSpec V2 Double ->
-  [(Text, Text)] ->
-  IO ()
+genImageFile
+  :: Options
+  -- ^ Interpreter configuration
+  -> FilePath
+  -- ^ Destination directory
+  -> FilePath
+  -- ^ Output path relative to destination
+  -> Text
+  -- ^ Haskell code to interpret
+  -> SizeSpec V2 Double
+  -- ^ Output image size
+  -> [(Text, Text)]
+  -> IO ()
 genImageFile opts destDir relPath code imageSize attributes
   | null relPath = fail "The `relPath` attribute of a diagram can not be an empty string."
   | otherwise = do

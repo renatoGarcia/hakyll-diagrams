@@ -1,5 +1,18 @@
 # hakyll-diagrams
 
+**Contents**
+* [Overview](#overview)
+* [Usage](#usage)
+  * [Input format](#input-format)
+     * [Code](#code)
+     * [Options](#options)
+  * [Metadata options](#metadata-options)
+  * [Haskell API](#haskell-api)
+* [Similar projects](#similar-projects)
+
+
+## Overview
+
 Compiles any [diagrams](https://diagrams.github.io/) code found within markdown source files
 and inserts the resulting figures into the generated HTML output. The figures can be embedded
 as inline SVG code or referenced via external image files using `<img>` tags.
@@ -107,15 +120,9 @@ whose resulting value has type [`Diagram SVG`](https://hackage.haskell.org/packa
 The code block must contain a single Haskell expression of type
 [`Diagram SVG`](https://hackage.haskell.org/package/diagrams-core/docs/Diagrams-Core.html#t:Diagram).
 
-The interpreter environment is configurable via the
-[`Options`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#t:Options)
-record, which serves as an argument to the
-[`drawDiagramsWith`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith)
-function. All exports from modules listed in
-[`globalModules`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:globalModules)
-and
-[`localModules`](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:localModules)
-will be available in the context.
+The interpreter environment is configurable via the [`Options`] record, which serves as an
+argument to the [`drawDiagramsWith`] function. All exports from modules listed in
+[`globalModules`] and [`localModules`] will be available in the context.
 
 #### Options
 
@@ -184,22 +191,77 @@ three, it will be ignored without an error.
 The `#id` and `.class` values will be assigned to the outermost element, whether it is
 `<figure>`, `<img>`, or `<svg>`.
 
+### Metadata options
+
+We can use the Hakyll's [metadata
+block](https://jaspervdj.be/hakyll/tutorials/02-basics.html#pages-and-metadata) to create
+an [`Options`] record to be used as argument to the [`drawDiagramsWith`] functions that
+will render that page diagrams.
+
+This works starting from a base [`Options`] record, whose fields will be modified by the
+values at the metadata block. Each one of the record fields can be assigned a value
+through a metadata key named the same as that field prefixed with `dg.`.
+
+- Each field must be formatted as a list where each element is separated by a comma `,`.
+- Any occurrence of an ellipsis `...` will be replaced by the current value of that field
+  as in the base [`Options`].
+- When setting either [`globalModules`] or [`localModules`], a value like `Utils` will
+  result in an unqualified import of *Utils* module. A value like `Commons as Cm` will
+  result in a qualified import of *Commons* module under *Cm* name.
+- Any field not present will retain the same value as in the base [`Options`]. An empty
+  string `""` will set the field to an empty list.
+
+When starting with base:
+
+```Haskell
+Options
+  { globalModules =
+      [ ("Prelude", Nothing)
+      , ("Diagrams.Prelude", Nothing)
+      , ("Diagrams.Backend.SVG", Nothing)
+      ]
+  , localModules = []
+  , searchPaths = ["app", "posts"]
+  , languageExtensions = ["NoMonomorphismRestriction"]
+  }
+```
+
+the metadata block:
+
+```yaml
+---
+dg.localModules: Utils, Commons as Cm
+dg.searchPaths: lib, ..., foo
+dg.languageExtensions: ""
+---
+```
+
+will result in:
+
+```Haskell
+Options
+  { globalModules =
+      [ ("Prelude", Nothing)
+      , ("Diagrams.Prelude", Nothing)
+      , ("Diagrams.Backend.SVG", Nothing)
+      ]
+  , localModules = [("Utils", Nothing), ("Commons", Just "Cm")]
+  , searchPaths = ["lib", "app", "posts", "foo"]
+  , languageExtensions = []
+  }
+```
 
 ### Haskell API
 
 All the API documentation is available in the Haddock generated [project
 page](http://renatogarcia.blog.br/hakyll-diagrams).
 
-The main functions are
-[drawDiagrams](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagrams)
-and
-[drawDiagramsWith](http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith).
-Both functions accept a
+The main functions are [`drawDiagrams`] and [`drawDiagramsWith`]. Both functions accept a
 [Pandoc](https://hackage.haskell.org/package/pandoc-types/docs/Text-Pandoc-Definition.html#t:Pandoc)
 data structure and transform it by replacing
 [CodeBlock's](https://hackage.haskell.org/package/pandoc-types/docs/Text-Pandoc-Definition.html#v:CodeBlock)
-having a `diagram` class with their rendered diagram figures, as explained in the
-[Input format](#input-format) section.
+having a `diagram` class with their rendered diagram figures, as explained in the [Input
+format](#input-format) section.
 
 The simplest way to integrate these functions into a [Hakyll's
 rule](https://jaspervdj.be/hakyll/tutorials/03-rules-routes-compilers.html#basic-rules) is
@@ -207,14 +269,28 @@ with code like this:
 
 ``` Haskell
 match "posts/*.md" $ do
-    route $ setExtension "html"
-    compile $
-        pandocCompilerWithTransformM
-            defaultHakyllReaderOptions
-            defaultHakyllWriterOptions
-            drawDiagrams
+  route $ setExtension "html"
+  compile $
+    pandocCompilerWithTransformM
+      defaultHakyllReaderOptions
+      defaultHakyllWriterOptions
+      drawDiagrams
 ```
 
+We can use either [`readOptionsFromMetadata`] or [`readOptionsFromMetadataWith`] function
+to control at the input source level what [`Options`] will be used to configure the
+interpreter environment when rendering the diagrams on that page. The [Metadata
+options](#metadata-options) section explains the metadata block syntax.
+
+One simple way to add this metadata reading functionality to the example code above is to
+replace the `drawDiagrams` function by a `drawDiagrams'` defined as:
+
+``` Haskell
+drawDiagrams' :: Pandoc -> Compiler Pandoc
+drawDiagrams' pandoc = readOptionsFromMetadataWith opts >>= flip drawDiagramsWith pandoc
+  where
+    opts = defaultOptions { searchPaths  = ["app", "posts"] }
+```
 
 ## Similar projects
 
@@ -235,3 +311,13 @@ the
 monad. Since it uses those two diagrams libraries, it has the same limitations
 discussed above. Because of this, I have decided to create a new hakyll-diagrams library
 with all the desired features.
+
+
+
+[`Options`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#t:Options
+[`drawDiagrams`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagrams
+[`drawDiagramsWith`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith
+[`globalModules`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:globalModules
+[`localModules`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:localModules
+[`readOptionsFromMetadata`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:readOptionsFromMetadata
+[`readOptionsFromMetadataWith`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:readOptionsFromMetadataWith

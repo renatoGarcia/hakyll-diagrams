@@ -55,48 +55,76 @@ main = hspec $ after_ cleanTestEnv $ do
         html <- compileMarkdownWith drawDiagrams "data/inline_figure.md"
         html `shouldBeSimilar` "test/data/inline_figure.html"
 
-    describe "Changing the options" $ do
-      it "import Data.Maybe global Module to use fromJust" $ do
-        let opts =
-              defaultOptions
-                { globalModules =
-                    [ ("Prelude", Nothing)
-                    , ("Diagrams.Prelude", Nothing)
-                    , ("Diagrams.Backend.SVG", Nothing)
-                    , ("Data.Maybe", Nothing)
-                    ]
-                }
-        html <- compileMarkdownWith (drawDiagramsWith opts) "data/global_import.md"
-        html `shouldBeSimilar` "test/data/global_import.html"
+  describe "Changing the options" $ do
+    it "import Data.Maybe global Module to use fromJust" $ do
+      let opts =
+            defaultOptions
+              { globalModules =
+                  [ ("Prelude", Nothing)
+                  , ("Diagrams.Prelude", Nothing)
+                  , ("Diagrams.Backend.SVG", Nothing)
+                  , ("Data.Maybe", Nothing)
+                  ]
+              }
+      html <- compileMarkdownWith (drawDiagramsWith opts) "data/global_import.md"
+      html `shouldBeSimilar` "test/data/global_import.html"
 
-      it "import an invalid global Module" $ do
-        let opts =
-              defaultOptions
-                { globalModules =
-                    [ ("Prelude", Nothing)
-                    , ("Diagrams.Prelude", Nothing)
-                    , ("Diagrams.Backend.SVG", Nothing)
-                    , ("foo", Nothing)
-                    ]
-                }
-        let html = compileMarkdownWith (drawDiagramsWith opts) "data/global_import.md"
-        html `shouldThrow` anyIOException
+    it "import an invalid global Module" $ do
+      let opts =
+            defaultOptions
+              { globalModules =
+                  [ ("Prelude", Nothing)
+                  , ("Diagrams.Prelude", Nothing)
+                  , ("Diagrams.Backend.SVG", Nothing)
+                  , ("foo", Nothing)
+                  ]
+              }
+      let html = compileMarkdownWith (drawDiagramsWith opts) "data/global_import.md"
+      html `shouldThrow` anyIOException
 
-      it "set a language extension" $ do
-        let opts =
-              defaultOptions
-                { languageExtensions = ["NoMonomorphismRestriction"]
-                }
-        html <- compileMarkdownWith (drawDiagramsWith opts) "data/inline.md"
-        html `shouldBeSimilar` "test/data/inline.html"
+    it "set a language extension" $ do
+      let opts =
+            defaultOptions
+              { languageExtensions = ["NoMonomorphismRestriction"]
+              }
+      html <- compileMarkdownWith (drawDiagramsWith opts) "data/inline.md"
+      html `shouldBeSimilar` "test/data/inline.html"
 
-      it "set an invalid language extension" $ do
-        let opts =
-              defaultOptions
-                { languageExtensions = ["foo"]
-                }
-        let html = compileMarkdownWith (drawDiagramsWith opts) "data/inline.md"
-        html `shouldThrow` anyIOException
+    it "set an invalid language extension" $ do
+      let opts =
+            defaultOptions
+              { languageExtensions = ["foo"]
+              }
+      let html = compileMarkdownWith (drawDiagramsWith opts) "data/inline.md"
+      html `shouldThrow` anyIOException
+
+    it "read options from metadata" $ do
+      opts <- compileReadOptions optDef "data/metadata.md"
+      opts `shouldBe` optRef
+  where
+    optDef =
+      defaultOptions
+        { searchPaths = ["app", "posts"]
+        , languageExtensions = ["NoMonomorphismRestriction"]
+        }
+    optRef =
+      Options
+        { globalModules =
+            [ ("Prelude", Nothing)
+            , ("Diagrams.Prelude", Nothing)
+            , ("Diagrams.Backend.SVG", Nothing)
+            ]
+        , localModules = [("Utils", Nothing), ("Commons", Just "Cm")]
+        , searchPaths = ["um", "app", "posts", "dois"]
+        , languageExtensions = []
+        }
+
+
+compileReadOptions :: Options -> Identifier -> IO Options
+compileReadOptions opts path = do
+  store <- newTestStore
+  provider <- newTestProvider store
+  testCompilerDone store provider path (readOptionsFromMetadataWith opts)
 
 
 compileMarkdownWith :: (Pandoc -> Compiler Pandoc) -> Identifier -> IO T.Text
