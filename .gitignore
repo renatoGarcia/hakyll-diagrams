@@ -1,3 +1,6 @@
 *~
-/dist-newstyle
+/dist-*
 /result
+.ghc.environment.*
+/ci-files/cabal/
+/ci-files/ghcup/

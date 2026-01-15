@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '*.md'
+      - 'LICENSE'
+      - 'justfile'
+      - '.justfile.json'
+      - '*.nix'
+  pull_request:
+    types: [opened, synchronize]
+    branches: [master]
+    paths-ignore:
+      - '*.md'
+      - 'LICENSE'
+      - 'justfile'
+      - '.justfile.json'
+      - '*.nix'
+
+  # Build once a month, to detect missing upper bounds.
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  cabal:
+    name: Test Project
+    runs-on: ubuntu-latest
+    container:
+      image: renatogarcia/hakyll-diagrams-ci
+      env:
+        CABAL_DIR: /github/home/cabal
+        GHCUP_INSTALL_BASE_PREFIX: /github/home/
+    strategy:
+      fail-fast: false
+      matrix:
+        ghcver: ["9.4.8", "9.12.2"]
+        include:
+          - ghcver: "9.4.8"
+            projfile: cabal.project.lower
+            freezefile: cabal.project.lower.freeze
+          - ghcver: "9.12.2"
+            projfile: cabal.project.upper
+            freezefile: cabal.project.upper.freeze
+          - cabalver: "3.12.1.0"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache Cabal and GHC install
+        id: cache-ghc-cabal-install
+        uses: actions/cache@v5
+        with:
+          path: /github/home/.ghcup
+          key: ghc-${{ matrix.ghcver }}-cabal-${{ matrix.cabalver }}
+
+      - name: Install Cabal and GHC
+        if: steps.cache-ghc-cabal-install.outputs.cache-hit != 'true'
+        run: |
+          ghcup install cabal ${{ matrix.cabalver }}
+          ghcup install ghc ${{ matrix.ghcver }}
+
+      - name: Freeze Cabal deps
+        run: |
+          cabal update
+          cabal freeze --project-file=${{ matrix.projfile }}
+
+      - name: Upload cabal freeze file
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.freezefile }}.${{ github.sha }}
+          path: ${{ matrix.freezefile }}
+
+      - name: Cache Cabal deps
+        id: cache-cabal-deps
+        uses: actions/cache@v5
+        with:
+          path: /github/home/cabal
+          key: ghc-${{ matrix.ghcver }}-freeze-${{ hashFiles(matrix.freezefile) }}
+
+      - name: Install Cabal deps
+        if: steps.cache-cabal-deps.outputs.cache-hit != 'true'
+        run: |
+          cabal build --only-dependencies --project-file=${{ matrix.projfile }}
+
+      - name: Build
+        run: |
+          cabal build --write-ghc-environment-files=always --project-file=${{ matrix.projfile }}
+
+      - name: Test
+        run: |
+          cabal test --project-file=${{ matrix.projfile }}
