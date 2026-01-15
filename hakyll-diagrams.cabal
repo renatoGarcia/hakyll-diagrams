@@ -37,6 +37,8 @@ description: Compiles any Haskell [diagrams](https://diagrams.github.io/) code e
   repository](https://github.com/renatoGarcia/hakyll-diagrams).
 
 
+homepage:           https://github.com/renatoGarcia/hakyll-diagrams
+
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Renato Garcia
@@ -48,33 +50,36 @@ build-type:         Simple
 extra-doc-files:    docs-data/target.svg
 extra-source-files: README.md
 
+tested-with: GHC == { 9.4.8, 9.12.2 }
+
 source-repository head
   type:     git
   location: https://github.com/renatoGarcia/hakyll-diagrams.git
 
 common warnings
-    ghc-options: -Wall
+  ghc-options: -Wall
 
 common common-deps
   build-depends:
-      base                 ^>=4.19
-    , hakyll               >=4.14    && <4.17
-    , text                 >=1.2     && <2.2
-    , pandoc-types         ^>=1.23
+      base >=4.17.2 && <4.22,
+      hakyll ^>=4.16.2,
+      text >=2.0.2 && <2.2,
+      pandoc-types ^>=1.23
 
 library
   import:           warnings, common-deps
   exposed-modules:  Hakyll.Web.Pandoc.Diagrams
   build-depends:
-      base16-bytestring    >=1.0     && <1.1
-    , cryptohash-sha1      >=0.11    && <0.12
-    , data-default         >=0.7     && <0.8
-    , diagrams             ^>=1.4.2
-    , diagrams-core        ^>=1.5.1
-    , diagrams-lib         ^>=1.4.6
-    , diagrams-svg         ^>=1.4.4
-    , svg-builder          >=0.1     && <0.2
-    , hint                 ^>=0.9.0
+      base16-bytestring ^>=1.0.2,
+      cryptohash-sha1 ^>=0.11.101,
+      data-default >=0.7.1 && <0.9,
+      diagrams ^>=1.4.1,
+      diagrams-core ^>=1.5.1,
+      diagrams-lib >=1.4.6 && <1.6,
+      diagrams-svg >=1.4.3 && <1.6,
+      hint ^>=0.9.0,
+      split ^>=0.2.3,
+      svg-builder ^>=0.1.1
 
   hs-source-dirs:   src
   default-language: Haskell2010

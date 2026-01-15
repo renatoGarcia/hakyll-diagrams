@@ -1,0 +1,4 @@
+[
+  { "ghcver": "9.4.8",  "projfile": "cabal.project.lower" },
+  { "ghcver": "9.12.2", "projfile": "cabal.project.upper" }
+]

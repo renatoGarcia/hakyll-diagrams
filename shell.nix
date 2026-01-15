@@ -8,6 +8,7 @@ let
     modifier = drv:
       pkgs.haskell.lib.addBuildTools drv (with haskellPackages; [
         cabal-install
+        cabal-plan-bounds
         haskell-language-server
         hlint
         fourmolu
