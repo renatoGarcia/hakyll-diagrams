@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               hakyll-diagrams
-version:            0.1.0.0
+version:            0.1.0.1
 
 synopsis: A Hakyll plugin for rendering diagrams figures from embedded Haskell code.
 
@@ -31,7 +31,7 @@ description: Compiles any Haskell [diagrams](https://diagrams.github.io/) code e
 
   will be replaced in the resulting HTML page by this figure:
 
-  <<docs-data/target.svg>>
+  <<docs/docs-data/target.svg>>
 
   A thoughtful documentation with usage examples and results can be found at the [project
   repository](https://github.com/renatoGarcia/hakyll-diagrams).
@@ -48,7 +48,6 @@ category:           Web
 build-type:         Simple
 
 extra-doc-files:    docs-data/target.svg
-extra-source-files: README.md
 
 tested-with: GHC == { 9.4.8, 9.12.2 }
 
