@@ -85,7 +85,7 @@ jobs:
 
       - name: Build
         run: |
-          cabal build --write-ghc-environment-files=always --project-file=${{ matrix.projfile }}
+          cabal build --project-file=${{ matrix.projfile }}
 
       - name: Test
         run: |
