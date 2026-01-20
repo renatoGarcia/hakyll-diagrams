@@ -255,7 +255,7 @@ Options
 ### Haskell API
 
 All the API documentation is available in the Haddock generated [project
-page](http://renatogarcia.blog.br/hakyll-diagrams).
+page](https://hackage.haskell.org/package/hakyll-diagrams).
 
 The main functions are [`drawDiagrams`] and [`drawDiagramsWith`]. Both functions accept a
 [Pandoc](https://hackage.haskell.org/package/pandoc-types/docs/Text-Pandoc-Definition.html#t:Pandoc)
@@ -334,10 +334,10 @@ with all the desired features.
 
 
 
-[`Options`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#t:Options
-[`drawDiagrams`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagrams
-[`drawDiagramsWith`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith
-[`globalModules`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:globalModules
-[`localModules`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:localModules
-[`readOptionsFromMetadata`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:readOptionsFromMetadata
-[`readOptionsFromMetadataWith`]: http://renatogarcia.blog.br/hakyll-diagrams/Hakyll-Web-Pandoc-Diagrams.html#v:readOptionsFromMetadataWith
+[`Options`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#t:Options
+[`drawDiagrams`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagrams
+[`drawDiagramsWith`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#v:drawDiagramsWith
+[`globalModules`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#v:globalModules
+[`localModules`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#v:localModules
+[`readOptionsFromMetadata`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#v:readOptionsFromMetadata
+[`readOptionsFromMetadataWith`]: https://hackage.haskell.org/package/hakyll-diagrams/docs/Hakyll-Web-Pandoc-Diagrams.html#v:readOptionsFromMetadataWith
