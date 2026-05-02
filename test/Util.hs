@@ -33,8 +33,11 @@ newTestStore = Store.new True $ storeDirectory testConfiguration
 --------------------------------------------------------------------------------
 newTestProvider :: Store -> IO Provider
 newTestProvider store =
-  newProvider store (const $ return False) $
-    providerDirectory testConfiguration
+#if MIN_VERSION_hakyll(4,17,0)
+  fst <$>
+#endif
+    (newProvider store (const $ return False) $
+      providerDirectory testConfiguration)
 
 
 --------------------------------------------------------------------------------
