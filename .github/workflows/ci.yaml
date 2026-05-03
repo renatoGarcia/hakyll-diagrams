@@ -35,15 +35,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghcver: ["9.4.8", "9.12.2"]
+        ghcver: ["9.4.8", "9.14.1"]
         include:
           - ghcver: "9.4.8"
             projfile: cabal.project.lower
             freezefile: cabal.project.lower.freeze
-          - ghcver: "9.12.2"
+          - ghcver: "9.14.1"
             projfile: cabal.project.upper
             freezefile: cabal.project.upper.freeze
-          - cabalver: "3.12.1.0"
+          - cabalver: "3.16.1.0"
     steps:
       - uses: actions/checkout@v6
 

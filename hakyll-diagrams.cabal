@@ -49,7 +49,7 @@ build-type:         Simple
 
 extra-doc-files:    docs-data/target.svg
 
-tested-with: GHC == { 9.4.8, 9.12.2 }
+tested-with: GHC == { 9.4.8, 9.14.1 }
 
 extra-source-files:
   test/data/external.html
@@ -83,7 +83,7 @@ common warnings
 
 common common-deps
   build-depends:
-      base >=4.17.2 && <4.22,
+      base >=4.17.2 && <4.23,
       hakyll >=4.16.2 && <4.18,
       text >=2.0.2 && <2.2,
       pandoc-types ^>=1.23

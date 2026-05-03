@@ -1,2 +1,14 @@
 import: cabal.project
-with-compiler: ghc-9.12.2
+with-compiler: ghc-9.14.1
+allow-newer:
+  diagrams-contrib:base,
+  diagrams-contrib:containers,
+  diagrams-lib:base,
+  diagrams-lib:containers,
+  diagrams-svg:base,
+  diagrams-svg:containers,
+  force-layout:base,
+  lrucache:containers,
+  ordered-containers:containers,
+  svg-builder:base,
+  unicode-collation:base
